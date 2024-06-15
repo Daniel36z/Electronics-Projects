@@ -1,0 +1,4 @@
+El siguiente proyecto consiste en un circuito electrónico controlado por
+un PIC 16F886 el cual puede encender dos cargas a 110 o 220 V, esta
+programado con lenguaje BASIC y su placa de control y diagrama electrico 
+estan realizados con proteus.

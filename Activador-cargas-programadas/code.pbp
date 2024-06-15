@@ -1,0 +1,160 @@
+'SE DEFIE LOS PUERTOS COMO: 0 Output/ 1 Input
+TRISA = %10000000
+TRISB = %11000100
+TRISC = %00000000
+
+'SE INICIALIZAN EN CERO
+PORTA = PORTB = PORTC = 0
+DEFINE I2C_SLOW 1
+
+'Enable pull up resistor  / O ACTIVADA - 1 DESACTIVADA
+OPTION_REG = 0
+WPUB = %11000000
+
+
+'L PARA portA, h portB --> 0 DIGITAL 1 ADC
+ANSEL = %00000000
+ANSELH = %00000000
+
+
+'-------------DEFINICION VARIALES------------------
+SENSOR VAR PORTA.7       'CON PULL-UP OBLIGATORIO
+
+
+LOAD2 VAR PORTA.3
+LOAD1 VAR PORTA.2
+
+SDA VAR PORTB.7
+SCL VAR PORTB.6 
+
+'SE APAGAN LAS CARGAS
+LOW LOAD1
+HIGH LOAD2
+
+
+'initialize var values
+'VARIABLE INSTANTIATION
+ SL1MON VAR BYTE
+ SL1SON VAR BYTE
+ SL1MOFF VAR BYTE
+ SL1SOFF VAR BYTE
+ SL2MON VAR BYTE
+ SL2SON VAR BYTE
+ SL2MOFF VAR BYTE
+ SL2SOFF VAR BYTE
+ 
+ SRESETM VAR BYTE
+ SRESETS VAR BYTE
+ 
+ MINUTE VAR BYTE
+ SECOND VAR BYTE
+ 
+ TRIGGER VAR BIT
+ 
+ SLOAD1 VAR BYTE
+ SLOAD2 VAR BYTE
+ PREVSLOAD1 VAR BYTE
+ PREVSLOAD2 VAR BYTE      
+
+'loads control time
+'HAY UNA PERDIDA DE +12 SEC
+sL1MON = $0
+sL1SON = $20
+sL1MOFF = $0
+sL1SOFF = $40    
+
+'HAY UNA PERDIDA DE +7 SEC
+sL2MON = $0
+sL2SON = $25
+sL2MOFF = $0
+sL2SOFF = $45
+
+ SRESETM = $1
+ SRESETS = $00
+ 
+'ACTUAL TIME
+MINUTE = 0
+SECOND = 0
+
+TRIGGER = 0
+
+SLOAD1 = 0
+SLOAD2 = 1
+PREVSLOAD1 = 0
+PREVSLOAD2 = 0
+
+ 
+                         
+I2CWRITE SDA,SCL,$D0,0,[0]
+I2CWRITE SDA,SCL,$D0,1,[0]  
+                         
+MAIN:
+
+I2CREAD SDA,SCL,$D1,0,[SECOND]
+I2CREAD SDA,SCL,$D1,1,[MINUTE] 
+
+	IF ((TRIGGER == 0) && (SENSOR==1))THEN
+		GOSUB SETTRIGGER                             
+	ELSE
+		IF (TRIGGER == 1) THEN
+			gosub setloads
+		ENDIF
+	ENDIF
+	PAUSE 100
+	
+GOTO MAIN
+
+SETTRIGGER:  
+    I2CWRITE SDA,SCL,$D0,0,[0]
+    I2CWRITE SDA,SCL,$D0,1,[0]  
+    trigger = 1     
+    
+return
+
+SETLOADS:
+
+    IF (MINUTE >= sL1MON && SECOND >= sL1SON ) THEN
+        SLOAD1 = 1
+	
+	ENDIF
+
+    IF (MINUTE >= sL1MOFF && SECOND >= sL1SOFF ) THEN
+         SLOAD1 = 0
+	 
+    ENDIF
+     IF (MINUTE >= sL2MON && SECOND >= sL2SON ) THEN
+        SLOAD2 = 0	
+		
+    ENDIF
+
+    IF (MINUTE >= sL2MOFF && SECOND >= sL2SOFF) THEN
+        SLOAD2 = 1
+	                                                       
+    ENDIF
+
+    
+    IF (MINUTE >= sRESETM && SECOND >= sRESETS) THEN
+        TRIGGER = 0
+        PREVSLOAD1 = 0
+        SLOAD1 = 0
+        PREVSLOAD2 = 0
+        SLOAD2 = 1
+    ENDIF
+    if(trigger ==1) then
+        if(sload1 ==1 )then
+            high load1
+        else
+            low load1
+        endif
+        
+        if(sload2==1 ) then
+            high load2  
+        else
+            low load2
+        endif
+    else
+        low load1
+        HIGH load2
+    endif
+
+return
